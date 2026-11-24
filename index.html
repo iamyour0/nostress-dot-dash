@@ -132,7 +132,7 @@ function draw(){ctx.clearRect(0,0,W,H);
  particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
  if(combo>=4&&comboClock>0){ctx.fillStyle='#d9fff5';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('✨ '+combo+' DOT COMBO!',player.x,player.y-player.r-22)}
  // pulse cooldown indicator
- ctx.fillStyle='rgba(255,255,255,.13)';roundedRect(18,H-25,130,7,4);ctx.fill();ctx.fillStyle='#8fffe0';roundedRect(18,H-25,130*(1-pulseCooldown/5.5),7,4);ctx.fill();
+ ctx.fillStyle='rgba(255,255,255,.13)';roundedRect(18,H-25,130,7,4);ctx.fill();ctx.fillStyle='#8fffe0';roundedRect(18,H-25,130*(1-pulseCooldown/4.0),7,4);ctx.fill();
  ctx.fillStyle='#a8c6d9';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText(pulseCooldown>0?'PULSE RECHARGING':'PULSE READY',18,H-34);
 }
 function loop(t){let dt=(t-last)/1000||0;last=t;update(dt);draw();requestAnimationFrame(loop)}
@@ -141,8 +141,35 @@ $('pauseBtn').addEventListener('click',pause);
 $('easyBtn').addEventListener('click',()=>{calm=!calm;$('easyBtn').textContent='Calm mode: '+(calm?'ON':'OFF')});
 $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent='Sound: '+(soundOn?'ON':'OFF');if(soundOn)audio(600,.06)});
 $('pulseBtn').addEventListener('pointerdown',e=>{e.preventDefault();pulse()});
-window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k===' ')pulse();if(k==='p')pause();if(k==='enter'&&!running)start()});
-window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+window.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+
+  // Spacebar: pulse only, never activate focused buttons
+  if(e.code==='Space'){
+    if(e.target.matches('input,textarea,select')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(!e.repeat) pulse();
+    return;
+  }
+
+  if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k)){
+    e.preventDefault();
+  }
+
+  keys[k]=true;
+
+  if(k==='p'){
+    e.preventDefault();
+    pause();
+  }
+
+  if(k==='enter'&&!running) start();
+},true);
+
+window.addEventListener('keyup',e=>{
+  keys[e.key.toLowerCase()]=false;
+});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('[data-dir]').forEach(b=>{let dir=b.dataset.dir;const vec={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};function on(e){e.preventDefault();touchDir.x=vec[dir][0];touchDir.y=vec[dir][1];b.setPointerCapture?.(e.pointerId)}function off(e){e.preventDefault();touchDir.x=0;touchDir.y=0}b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)});
 reset();last=performance.now();requestAnimationFrame(loop);
 })();
