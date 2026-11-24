@@ -129,14 +129,14 @@ function draw(){ctx.clearRect(0,0,W,H);
  // player trail
  player.trail.forEach((p,i)=>{ctx.globalAlpha=(1-i/player.trail.length)*.18;ctx.fillStyle='#8fffe0';ctx.beginPath();ctx.arc(p.x,p.y,player.r*(.7-i/player.trail.length*.35),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
  ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.shadowBlur=22;ctx.shadowColor='#7fffe2';let pg=ctx.createRadialGradient(-5,-7,2,0,0,player.r*1.4);pg.addColorStop(0,'#f0fff9');pg.addColorStop(.4,'#8df9e0');pg.addColorStop(1,'#24b9ad');ctx.fillStyle=pg;ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(player.r+7,0);ctx.lineTo(player.r-1,-5);ctx.lineTo(player.r-1,5);ctx.closePath();ctx.fill();ctx.restore();
- if(player.pulse>0||pulseFlash>0){ctx.strokeStyle=`rgba(135,255,226,${Math.max(.1,pulseFlash/.6)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(player.x,player.y,player.r+((.6-pulseFlash)/.6)*175,0,Math.PI*2);ctx.stroke()}
+ if(player.pulse>0||pulseFlash>0){const pulseProgress=Math.max(0,Math.min(1,1-pulseFlash/.7));const pulseRadius=Math.max(1,player.r+pulseProgress*175);ctx.strokeStyle=`rgba(135,255,226,${Math.max(.1,Math.min(1,pulseFlash/.7))})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(player.x,player.y,pulseRadius,0,Math.PI*2);ctx.stroke()}
  particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
  if(combo>=4&&comboClock>0){ctx.fillStyle='#d9fff5';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('✨ '+combo+' DOT COMBO!',player.x,player.y-player.r-22)}
  // pulse cooldown indicator
  ctx.fillStyle='rgba(255,255,255,.13)';roundedRect(18,H-25,130,7,4);ctx.fill();ctx.fillStyle='#8fffe0';roundedRect(18,H-25,130*(1-pulseCooldown/3.2),7,4);ctx.fill();
  ctx.fillStyle='#a8c6d9';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText(pulseCooldown>0?'PULSE RECHARGING':'PULSE READY',18,H-34);
 }
-function loop(t){let dt=(t-last)/1000||0;last=t;update(dt);draw();requestAnimationFrame(loop)}
+function loop(t){let dt=(t-last)/1000||0;last=t;try{update(dt);draw()}catch(err){console.error('Dot Dash frame error:',err)}finally{requestAnimationFrame(loop)}}
 $('startBtn').addEventListener('click',e=>{e.currentTarget.blur();if(paused){paused=false;clearInput();$('overlay').classList.add('hidden');$('pauseBtn').textContent='Pause';last=performance.now()}else start()});
 $('pauseBtn').addEventListener('click',e=>{e.currentTarget.blur();pause()});
 $('easyBtn').addEventListener('click',()=>{calm=!calm;$('easyBtn').textContent=(NS_TEXT[nsLang]||NS_TEXT.en)[calm?'calm':'calmOff']});
