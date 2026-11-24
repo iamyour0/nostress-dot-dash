@@ -42,6 +42,7 @@ button.secondary{background:#203d56;color:#eaf7ff;box-shadow:0 4px 0 #102638;bor
 .pad button[data-dir="right"]{grid-column:3;grid-row:2}
 .boost{width:94px;height:94px;border-radius:50%;background:linear-gradient(145deg,#f9a8d4,#fb7185);color:#4b1029;box-shadow:0 5px 0 #9f3154;touch-action:none}
 footer{color:#7898ae;font-size:12px;text-align:center;margin:12px 0 3px}
+.health-stat{min-width:104px}.health-track{height:7px;width:100%;margin-top:6px;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden}.health-fill{height:100%;width:100%;background:linear-gradient(90deg,#ff6d91,#ffb2c6);border-radius:8px;transition:width .18s ease,background .18s ease}
 @media(max-width:650px){body{padding:8px}.stat{min-width:64px;padding:6px 9px}.mobile-pad{display:flex}.below{font-size:12px}.brand p{max-width:250px}}
 </style>
 </head>
@@ -54,7 +55,7 @@ footer{color:#7898ae;font-size:12px;text-align:center;margin:12px 0 3px}
     <div class="stat"><small>DOTS</small><strong id="score">0</strong></div>
     <div class="stat"><small>BEST</small><strong id="best">0</strong></div>
     <div class="stat"><small>STAGE</small><strong id="stage">1</strong></div>
-    <div class="stat" id="healthStat" style="display:none"><small id="healthLabel">HEALTH</small><strong id="health">100%</strong></div>
+    <div class="stat health-stat" id="healthStat" style="display:none"><small id="healthLabel">HEALTH</small><strong id="health">100%</strong><div class="health-track"><div id="healthBar" class="health-fill"></div></div></div>
   </div>
 </header>
 <div class="stage">
@@ -107,8 +108,8 @@ function reset(){score=0;stage=1;health=100;combo=0;comboClock=0;pulseCooldown=0
 }
 function spawnDot(){let x,y;do{x=rand(25,W-25);y=rand(25,H-25)}while(player&&Math.hypot(x-player.x,y-player.y)<75);dots.push({x,y,r:rand(3.3,6.2),v:rand(0,Math.PI*2),shine:rand(0,6.28),kind:Math.random()<.075?'gold':'normal'})}
 function spawnFoe(){let edge=Math.floor(rand(0,4)),x=edge===0?10:edge===1?W-10:rand(10,W-10),y=edge===2?10:edge===3?H-10:rand(10,H-10);foes.push({x,y,r:rand(14,20),speed:(calm?rand(55,70):rand(78,96))+(stage-1)*(calm?3.2:5.2),vx:0,vy:0,stun:0,phase:rand(0,6.28)})}
-function updateHUD(){$('score').textContent=score;$('best').textContent=best;$('stage').textContent=stage;$('health').textContent=health+'%';$('healthStat').style.display=collisionMode==='health'?'block':'none'}
-function start(){reset();running=true;paused=false;$('overlay').classList.add('hidden');last=performance.now();audio(540,.09)}
+function updateHUD(){$('score').textContent=score;$('best').textContent=best;$('stage').textContent=stage;$('health').textContent=health+'%';$('healthStat').style.display=collisionMode==='health'?'block':'none';$('healthBar').style.width=health+'%';$('healthBar').style.background=health<=25?'linear-gradient(90deg,#ff405f,#ff8c9e)':'linear-gradient(90deg,#ff6d91,#ffb2c6)'}
+function start(){collisionMode=$('collisionMode').value==='health'?'health':'score';try{localStorage.setItem('ns-dotdash-collision',collisionMode)}catch(e){}reset();running=true;paused=false;$('overlay').classList.add('hidden');last=performance.now();audio(540,.09)}
 function show(title,text,button='Play again'){const t=NS_TEXT[nsLang]||NS_TEXT.en;const map={'Taking a breather?':'paused','Your garden is waiting right where you left it.':'pauseText','Play again':'again','again':'again','A gentle bump!':'over','A shadow caught your comet. Your garden is still here—try another drift!':'overText','Play':'play','Resume':'resume','healthOver':'healthOver','healthOverText':'healthOverText'};$('overlayTitle').textContent=map[title]?t[map[title]]:title;$('overlayText').textContent=map[text]?t[map[text]]:text;$('startBtn').textContent=map[button]?t[map[button]]:button;$('overlay').classList.remove('hidden')}
 function clearInput(){keys={};touchDir={x:0,y:0};}
 function pause(){if(!running)return;paused=!paused;clearInput();$('pauseBtn').textContent=(NS_TEXT[nsLang]||NS_TEXT.en)[paused?'resume':'pause'];if(paused)show('Taking a breather?','Your garden is waiting right where you left it.','Resume');else{$('overlay').classList.add('hidden');last=performance.now()}}
@@ -154,6 +155,7 @@ function draw(){ctx.clearRect(0,0,W,H);
 }
 function loop(t){let dt=(t-last)/1000||0;last=t;try{update(dt);draw()}catch(err){console.error('Dot Dash frame error:',err)}finally{requestAnimationFrame(loop)}}
 $('startBtn').addEventListener('click',e=>{e.currentTarget.blur();if(paused){paused=false;clearInput();$('overlay').classList.add('hidden');$('pauseBtn').textContent='Pause';last=performance.now()}else start()});
+$('collisionMode').addEventListener('change',e=>{collisionMode=e.target.value==='health'?'health':'score';try{localStorage.setItem('ns-dotdash-collision',collisionMode)}catch(err){}updateHUD()});
 $('pauseBtn').addEventListener('click',e=>{e.currentTarget.blur();pause()});
 $('easyBtn').addEventListener('click',()=>{calm=!calm;$('easyBtn').textContent=(NS_TEXT[nsLang]||NS_TEXT.en)[calm?'calm':'calmOff']});
 $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=(NS_TEXT[nsLang]||NS_TEXT.en)[soundOn?'soundOn':'soundOff'];if(soundOn)audio(600,.06)});
