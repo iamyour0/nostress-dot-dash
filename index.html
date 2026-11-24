@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>No Stress Dot Dash</title>
+<style>
+:root{--ink:#eaf7ff;--muted:#a8c6d9;--panel:rgba(8,24,42,.82);--line:rgba(169,221,255,.22)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#071526;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;justify-content:center;padding:14px}
+.game{width:min(100%,980px);margin:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.brand h1{font-size:clamp(20px,4vw,30px);margin:0;letter-spacing:.02em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}.lang-wrap{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}.lang-select{background:#203d56;color:#eaf7ff;border:1px solid #42617b;border-radius:10px;padding:8px 9px;font:inherit;max-width:150px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;min-width:76px;text-align:center}
+.stat small{display:block;color:var(--muted);font-size:11px}
+.stat strong{font-size:18px;font-variant-numeric:tabular-nums}
+.stage{position:relative;border:1px solid rgba(158,220,255,.3);border-radius:18px;overflow:hidden;background:#0a2940;box-shadow:0 18px 50px #0007}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;touch-action:none}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,15,29,.58);backdrop-filter:blur(4px)}
+.overlay.hidden{display:none}
+.card{width:min(100%,430px);text-align:center;background:rgba(7,27,46,.94);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 12px 40px #0008}
+.card h2{margin:0 0 8px;font-size:clamp(24px,5vw,34px)}
+.card p{color:#bad4e5;line-height:1.55;margin:8px 0 18px}
+button{border:0;border-radius:12px;padding:11px 16px;font:inherit;font-weight:750;color:#082033;background:linear-gradient(135deg,#a5f3fc,#67e8c2);cursor:pointer;box-shadow:0 4px 0 #2d8f91}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 #2d8f91}
+button.secondary{background:#203d56;color:#eaf7ff;box-shadow:0 4px 0 #102638;border:1px solid #42617b}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.below{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 2px;color:var(--muted);font-size:13px}
+.controls{display:flex;gap:8px;align-items:center}
+.controls button{padding:8px 12px;font-size:13px}
+.mobile-pad{display:none;justify-content:space-between;align-items:center;gap:12px;margin:12px auto 0;max-width:440px}
+.pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,44px);gap:5px}
+.pad button{padding:0;border-radius:12px;background:#173650;color:#eaf7ff;box-shadow:0 3px 0 #0a2032;border:1px solid #41627b;touch-action:none}
+.pad button[data-dir="up"]{grid-column:2;grid-row:1}
+.pad button[data-dir="left"]{grid-column:1;grid-row:2}
+.pad button[data-dir="down"]{grid-column:2;grid-row:2}
+.pad button[data-dir="right"]{grid-column:3;grid-row:2}
+.boost{width:94px;height:94px;border-radius:50%;background:linear-gradient(145deg,#f9a8d4,#fb7185);color:#4b1029;box-shadow:0 5px 0 #9f3154;touch-action:none}
+footer{color:#7898ae;font-size:12px;text-align:center;margin:12px 0 3px}
+@media(max-width:650px){body{padding:8px}.stat{min-width:64px;padding:6px 9px}.mobile-pad{display:flex}.below{font-size:12px}.brand p{max-width:250px}}
+</style>
+</head>
+<body>
+<div class="game">
+<header>
+  <div class="brand"><h1>✨ No Stress Dot Dash</h1><p>Collect glowing dots, grow your trail, and drift through the garden.</p></div>
+  <div class="lang-wrap"><label for="languageSelect" id="languageLabel">Language</label><select class="lang-select" id="languageSelect" aria-label="Language"></select></div>
+  <div class="stats">
+    <div class="stat"><small>DOTS</small><strong id="score">0</strong></div>
+    <div class="stat"><small>BEST</small><strong id="best">0</strong></div>
+    <div class="stat"><small>STAGE</small><strong id="stage">1</strong></div>
+  </div>
+</header>
+<div class="stage">
+  <canvas id="game" width="960" height="600" aria-label="Dot Dash game"></canvas>
+  <div class="overlay" id="overlay">
+    <div class="card">
+      <h2 id="overlayTitle">Ready to drift?</h2>
+      <p id="overlayText">Move around and eat the glowing dots. Your little comet grows as you collect. Avoid the sleepy shadow blobs—or use a pulse to send them drifting away.</p>
+      <div class="actions"><button id="startBtn">Play</button><button class="secondary" id="easyBtn">Calm mode: ON</button></div>
+    </div>
+  </div>
+</div>
+<div class="below">
+  <span>Move: WASD / Arrow keys · Pulse: Space · Pause: P</span>
+  <div class="controls"><button class="secondary" id="pauseBtn">Pause</button><button class="secondary" id="soundBtn">Sound: ON</button></div>
+</div>
+<div class="mobile-pad">
+  <div class="pad">
+    <button data-dir="up" aria-label="Up">▲</button><button data-dir="left" aria-label="Left">◀</button><button data-dir="down" aria-label="Down">▼</button><button data-dir="right" aria-label="Right">▶</button>
+  </div>
+  <button class="boost" id="pulseBtn">PULSE<br>SPACE</button>
+</div>
+<footer>Take it easy. There is no timer—just a little dot-catching adventure.</footer>
+</div>
+<script>
+(()=> {
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=960,H=600;
+let running=false,paused=false,calm=true,soundOn=true,score=0,stage=1,best=0,last=0,spawnClock=0,pulseCooldown=0,combo=0,comboClock=0;
+let player,dots=[],foes=[],particles=[],keys={},touchDir={x:0,y:0},pulseFlash=0,audioCtx=null;
+try{best=Number(localStorage.getItem('ns-dotdash-best')||0)}catch(e){}
+$('best').textContent=best;
+const rand=(a,b)=>a+Math.random()*(b-a),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function audio(freq=500,dur=.07,type='sine',vol=.035){if(!soundOn)return;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur)}catch(e){}}
+function reset(){score=0;stage=1;combo=0;comboClock=0;pulseCooldown=0;spawnClock=0;dots=[];foes=[];particles=[];
+ player={x:W*.5,y:H*.5,r:14,speed:235,angle:0,trail:[],pulse:0,invuln:1};
+ for(let i=0;i<75;i++)spawnDot();
+ for(let i=0;i<3;i++)spawnFoe();
+ updateHUD();
+}
+function spawnDot(){let x,y;do{x=rand(25,W-25);y=rand(25,H-25)}while(player&&Math.hypot(x-player.x,y-player.y)<75);dots.push({x,y,r:rand(3.3,6.2),v:rand(0,Math.PI*2),shine:rand(0,6.28),kind:Math.random()<.075?'gold':'normal'})}
+function spawnFoe(){let edge=Math.floor(rand(0,4)),x=edge===0?10:edge===1?W-10:rand(10,W-10),y=edge===2?10:edge===3?H-10:rand(10,H-10);foes.push({x,y,r:rand(14,20),speed:(calm?rand(55,70):rand(78,96))+(stage-1)*(calm?3.2:5.2),vx:0,vy:0,stun:0,phase:rand(0,6.28)})}
+function updateHUD(){$('score').textContent=score;$('best').textContent=best;$('stage').textContent=stage}
+function start(){reset();running=true;paused=false;$('overlay').classList.add('hidden');last=performance.now();audio(540,.09)}
+function show(title,text,button='Play again'){const t=NS_TEXT[nsLang]||NS_TEXT.en;const map={'Taking a breather?':'paused','Your garden is waiting right where you left it.':'pauseText','Play again':'again','A gentle bump!':'over','A shadow caught your comet. Your garden is still here—try another drift!':'overText','Play':'play','Resume':'resume'};$('overlayTitle').textContent=map[title]?t[map[title]]:title;$('overlayText').textContent=map[text]?t[map[text]]:text;$('startBtn').textContent=map[button]?t[map[button]]:button;$('overlay').classList.remove('hidden')}
+function pause(){if(!running)return;paused=!paused;$('pauseBtn').textContent=paused?'Resume':'Pause';if(paused)show('Taking a breather?','Your garden is waiting right where you left it.','Resume');else{$('overlay').classList.add('hidden');last=performance.now()}}
+function direction(){let x=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0)+touchDir.x,y=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0)+touchDir.y;let m=Math.hypot(x,y);return m?{x:x/m,y:y/m}: {x:0,y:0}}
+function pulse(){if(!running||paused||pulseCooldown>0)return;pulseCooldown=4.0;player.pulse=.65;pulseFlash=.7;audio(180,.18,'sine',.06);
+ foes.forEach(f=>{let d=dist(player,f);if(d<225){let a=Math.atan2(f.y-player.y,f.x-player.x),power=(225-d)/225;f.vx+=Math.cos(a)*(360+power*260);f.vy+=Math.sin(a)*(360+power*260);f.stun=1.55}});
+ for(let i=0;i<24;i++){let a=rand(0,Math.PI*2),d=rand(20,125);particles.push({x:player.x+Math.cos(a)*d,y:player.y+Math.sin(a)*d,vx:Math.cos(a)*rand(20,100),vy:Math.sin(a)*rand(20,100),life:rand(.25,.7),max:.7,r:rand(2,5),color:'#8ef9e5'})}
+}
+function collect(dot){score+=dot.kind==='gold'?5:1;combo++;comboClock=2.2;player.r=Math.min(25,14+Math.sqrt(score)*.34);player.speed=Math.max(165,235-score*.08);audio(dot.kind==='gold'?880:560,.045,'sine',dot.kind==='gold'?.05:.025);for(let i=0;i<5;i++)particles.push({x:dot.x,y:dot.y,vx:rand(-70,70),vy:rand(-70,70),life:.35,max:.35,r:rand(2,4),color:dot.kind==='gold'?'#ffe78a':'#a8ffe2'});
+ if(score>=stage*35){stage++;foes.forEach(f=>f.speed+=calm?3.2:5.2);if(foes.length<18)spawnFoe();audio(700,.16,'triangle',.05)}
+ if(score>best){best=score;try{localStorage.setItem('ns-dotdash-best',best)}catch(e){}}updateHUD()}
+function update(dt){if(!running||paused)return;dt=Math.min(dt,.035);let d=direction();if(d.x||d.y){player.x+=d.x*player.speed*dt;player.y+=d.y*player.speed*dt;player.angle=Math.atan2(d.y,d.x);player.trail.unshift({x:player.x,y:player.y});if(player.trail.length>10)player.trail.pop()}player.x=Math.max(player.r+4,Math.min(W-player.r-4,player.x));player.y=Math.max(player.r+4,Math.min(H-player.r-4,player.y));
+ pulseCooldown=Math.max(0,pulseCooldown-dt);player.pulse=Math.max(0,player.pulse-dt);pulseFlash=Math.max(0,pulseFlash-dt);player.invuln=Math.max(0,player.invuln-dt);comboClock=Math.max(0,comboClock-dt);if(comboClock===0)combo=0;
+ spawnClock+=dt;if(spawnClock>1.1&&dots.length<115){spawnClock=0;spawnDot();if(Math.random()<.28)spawnDot()}
+ dots=dots.filter(dot=>{if(Math.hypot(dot.x-player.x,dot.y-player.y)<dot.r+player.r+2){collect(dot);return false}return true});
+ foes.forEach(f=>{f.phase+=dt*2.3;if(f.stun>0){f.stun-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=Math.pow(.035,dt);f.vy*=Math.pow(.035,dt)}else{let a=Math.atan2(player.y-f.y,player.x-f.x);f.vx+=(Math.cos(a)*f.speed-f.vx)*Math.min(1,dt*2.3);f.vy+=(Math.sin(a)*f.speed-f.vy)*Math.min(1,dt*2.3);f.x+=f.vx*dt;f.y+=f.vy*dt}f.x=Math.max(f.r,Math.min(W-f.r,f.x));f.y=Math.max(f.r,Math.min(H-f.r,f.y));if(dist(f,player)<f.r+player.r-2&&player.invuln<=0){score=Math.max(0,score-3);player.invuln=1.1;player.x+=(player.x-f.x)*.8;player.y+=(player.y-f.y)*.8;audio(130,.15,'sawtooth',.035);updateHUD()}});
+ particles=particles.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.97;p.vy*=.97;p.life-=dt;return p.life>0});
+}
+function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function draw(){ctx.clearRect(0,0,W,H);
+ let bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#123e57');bg.addColorStop(.55,'#0b2d46');bg.addColorStop(1,'#092238');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ // soft garden lights
+ for(let i=0;i<12;i++){let x=(i*173+80)%W,y=(i*97+45)%H;let g=ctx.createRadialGradient(x,y,0,x,y,90);g.addColorStop(0,'rgba(76,210,174,.08)');g.addColorStop(1,'rgba(76,210,174,0)');ctx.fillStyle=g;ctx.fillRect(x-90,y-90,180,180)}
+ // subtle grid dots
+ ctx.fillStyle='rgba(190,236,255,.07)';for(let x=24;x<W;x+=48)for(let y=24;y<H;y+=48){ctx.beginPath();ctx.arc(x,y,1.3,0,Math.PI*2);ctx.fill()}
+ dots.forEach(dot=>{let glow=6+Math.sin(performance.now()*.003+dot.shine)*2;ctx.shadowBlur=dot.kind==='gold'?22:glow;ctx.shadowColor=dot.kind==='gold'?'#ffe68a':'#6df6d0';ctx.fillStyle=dot.kind==='gold'?'#ffe98f':'#8fffe0';ctx.beginPath();ctx.arc(dot.x,dot.y,dot.r+Math.sin(performance.now()*.004+dot.shine)*.7,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#ffffffaa';ctx.beginPath();ctx.arc(dot.x-dot.r*.3,dot.y-dot.r*.3,dot.r*.25,0,Math.PI*2);ctx.fill()});
+ // enemies
+ foes.forEach(f=>{ctx.save();ctx.translate(f.x,f.y);let pulse=1+Math.sin(f.phase)*.06;ctx.scale(pulse,pulse);ctx.shadowBlur=18;ctx.shadowColor='#ff779e';let g=ctx.createRadialGradient(-f.r*.3,-f.r*.4,2,0,0,f.r*1.3);g.addColorStop(0,'#ffb0c4');g.addColorStop(.45,'#f56d99');g.addColorStop(1,'#8b376c');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,f.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fff5fb';ctx.beginPath();ctx.arc(-f.r*.28,-f.r*.12,f.r*.23,0,Math.PI*2);ctx.arc(f.r*.28,-f.r*.12,f.r*.23,0,Math.PI*2);ctx.fill();ctx.fillStyle='#4b204a';ctx.beginPath();ctx.arc(-f.r*.24,-f.r*.1,f.r*.1,0,Math.PI*2);ctx.arc(f.r*.32,-f.r*.1,f.r*.1,0,Math.PI*2);ctx.fill();ctx.restore()});
+ // player trail
+ player.trail.forEach((p,i)=>{ctx.globalAlpha=(1-i/player.trail.length)*.18;ctx.fillStyle='#8fffe0';ctx.beginPath();ctx.arc(p.x,p.y,player.r*(.7-i/player.trail.length*.35),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
+ ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.shadowBlur=22;ctx.shadowColor='#7fffe2';let pg=ctx.createRadialGradient(-5,-7,2,0,0,player.r*1.4);pg.addColorStop(0,'#f0fff9');pg.addColorStop(.4,'#8df9e0');pg.addColorStop(1,'#24b9ad');ctx.fillStyle=pg;ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(player.r+7,0);ctx.lineTo(player.r-1,-5);ctx.lineTo(player.r-1,5);ctx.closePath();ctx.fill();ctx.restore();
+ if(player.pulse>0||pulseFlash>0){ctx.strokeStyle=`rgba(135,255,226,${Math.max(.1,pulseFlash/.6)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(player.x,player.y,player.r+((.6-pulseFlash)/.6)*175,0,Math.PI*2);ctx.stroke()}
+ particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
+ if(combo>=4&&comboClock>0){ctx.fillStyle='#d9fff5';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('✨ '+combo+' DOT COMBO!',player.x,player.y-player.r-22)}
+ // pulse cooldown indicator
+ ctx.fillStyle='rgba(255,255,255,.13)';roundedRect(18,H-25,130,7,4);ctx.fill();ctx.fillStyle='#8fffe0';roundedRect(18,H-25,130*(1-pulseCooldown/5.5),7,4);ctx.fill();
+ ctx.fillStyle='#a8c6d9';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText(pulseCooldown>0?'PULSE RECHARGING':'PULSE READY',18,H-34);
+}
+function loop(t){let dt=(t-last)/1000||0;last=t;update(dt);draw();requestAnimationFrame(loop)}
+$('startBtn').addEventListener('click',()=>{if(paused){paused=false;$('overlay').classList.add('hidden');$('pauseBtn').textContent='Pause';last=performance.now()}else start()});
+$('pauseBtn').addEventListener('click',pause);
+$('easyBtn').addEventListener('click',()=>{calm=!calm;$('easyBtn').textContent='Calm mode: '+(calm?'ON':'OFF')});
+$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent='Sound: '+(soundOn?'ON':'OFF');if(soundOn)audio(600,.06)});
+$('pulseBtn').addEventListener('pointerdown',e=>{e.preventDefault();pulse()});
+window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k===' ')pulse();if(k==='p')pause();if(k==='enter'&&!running)start()});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+document.querySelectorAll('[data-dir]').forEach(b=>{let dir=b.dataset.dir;const vec={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};function on(e){e.preventDefault();touchDir.x=vec[dir][0];touchDir.y=vec[dir][1];b.setPointerCapture?.(e.pointerId)}function off(e){e.preventDefault();touchDir.x=0;touchDir.y=0}b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)});
+reset();last=performance.now();requestAnimationFrame(loop);
+})();
+
+const NS_LANGS=[
+ ['en','🇺🇸 English'],['ko','🇰🇷 한국어'],['ja','🇯🇵 日本語'],['zh','🇨🇳 简体中文'],
+ ['es','🇪🇸 Español'],['fr','🇫🇷 Français'],['de','🇩🇪 Deutsch'],['pt','🇵🇹 Português'],
+ ['it','🇮🇹 Italiano'],['ru','🇷🇺 Русский']
+];
+const NS_TEXT={
+ en:{language:'Language',dots:'DOTS',best:'BEST',stage:'STAGE',subtitle:'Collect glowing dots, grow your trail, and drift through the garden.',ready:'Ready to drift?',intro:'Move around and eat the glowing dots. Your little comet grows as you collect. Avoid the sleepy shadow blobs—or use a pulse to send them drifting away.',play:'Play',calm:'Calm mode: ON',calmOff:'Calm mode: OFF',move:'Move: WASD / Arrow keys · Pulse: Space · Pause: P',pause:'Pause',resume:'Resume',soundOn:'Sound: ON',soundOff:'Sound: OFF',paused:'Taking a breather?',pauseText:'Your garden is waiting right where you left it.',again:'Play again',over:'A gentle bump!',overText:'A shadow caught your comet. Your garden is still here—try another drift!',languageSelect:'Select language'},
+ ko:{language:'언어',dots:'점수',best:'최고',stage:'단계',subtitle:'빛나는 점을 모으고 정원을 자유롭게 누비세요.',ready:'준비됐나요?',intro:'움직이며 빛나는 점을 모으세요. 점을 먹을수록 작은 혜성이 커집니다. 그림자 덩어리를 피하거나 파동으로 밀어내세요.',play:'플레이',calm:'편안한 모드: 켜짐',calmOff:'편안한 모드: 꺼짐',move:'이동: WASD / 방향키 · 파동: 스페이스 · 일시정지: P',pause:'일시정지',resume:'계속하기',soundOn:'소리: 켜짐',soundOff:'소리: 꺼짐',paused:'잠깐 쉬어갈까요?',pauseText:'정원이 멈춘 자리에서 기다리고 있어요.',again:'다시 플레이',over:'살짝 부딪혔어요!',overText:'그림자가 혜성을 잡았어요. 다시 편안하게 도전해 보세요!',languageSelect:'언어 선택'},
+ ja:{language:'言語',dots:'ドット',best:'ベスト',stage:'ステージ',subtitle:'光るドットを集めて、庭を自由に漂おう。',ready:'準備はいい？',intro:'動いて光るドットを集めよう。集めるほど小さな彗星が成長します。影を避け、パルスで押し返そう。',play:'プレイ',calm:'ゆったりモード: ON',calmOff:'ゆったりモード: OFF',move:'移動: WASD / 矢印 · パルス: Space · 一時停止: P',pause:'一時停止',resume:'再開',soundOn:'音: ON',soundOff:'音: OFF',paused:'ひと休み？',pauseText:'庭はその場所で待っています。',again:'もう一度',over:'やさしい接触！',overText:'影に捕まりました。もう一度漂ってみよう！',languageSelect:'言語を選択'},
+ zh:{language:'语言',dots:'点数',best:'最佳',stage:'阶段',subtitle:'收集发光点，在花园中自在漫游。',ready:'准备好了吗？',intro:'移动并收集发光点。收集越多，小彗星就越大。躲开影子，或用脉冲将它们推开。',play:'开始',calm:'轻松模式：开',calmOff:'轻松模式：关',move:'移动：WASD / 方向键 · 脉冲：空格 · 暂停：P',pause:'暂停',resume:'继续',soundOn:'声音：开',soundOff:'声音：关',paused:'休息一下？',pauseText:'花园会在原地等你。',again:'再玩一次',over:'轻轻碰到了！',overText:'影子抓住了彗星，再来一次轻松漫游吧！',languageSelect:'选择语言'},
+ es:{language:'Idioma',dots:'PUNTOS',best:'RÉCORD',stage:'NIVEL',subtitle:'Recoge puntos brillantes y recorre el jardín.',ready:'¿Listo para flotar?',intro:'Muévete y recoge puntos brillantes. Tu cometa crece al recogerlos. Evita las sombras o usa un pulso para alejarlas.',play:'Jugar',calm:'Modo tranquilo: ON',calmOff:'Modo tranquilo: OFF',move:'Mover: WASD / flechas · Pulso: Espacio · Pausa: P',pause:'Pausa',resume:'Continuar',soundOn:'Sonido: ON',soundOff:'Sonido: OFF',paused:'¿Tomamos un respiro?',pauseText:'Tu jardín te espera aquí.',again:'Jugar otra vez',over:'¡Un pequeño toque!',overText:'Una sombra atrapó tu cometa. ¡Prueba otra vez!',languageSelect:'Elegir idioma'},
+ fr:{language:'Langue',dots:'POINTS',best:'RECORD',stage:'NIVEAU',subtitle:'Ramasse les points lumineux et explore le jardin.',ready:'Prêt à flotter ?',intro:'Déplace-toi et ramasse les points lumineux. Ta comète grandit. Évite les ombres ou repousse-les avec une impulsion.',play:'Jouer',calm:'Mode calme : ON',calmOff:'Mode calme : OFF',move:'Déplacement : WASD / flèches · Impulsion : Espace · Pause : P',pause:'Pause',resume:'Reprendre',soundOn:'Son : ON',soundOff:'Son : OFF',paused:'Petite pause ?',pauseText:'Ton jardin t’attend ici.',again:'Rejouer',over:'Petit contact !',overText:'Une ombre a attrapé ta comète. Recommence tranquillement !',languageSelect:'Choisir la langue'},
+ de:{language:'Sprache',dots:'PUNKTE',best:'BESTE',stage:'STUFE',subtitle:'Sammle leuchtende Punkte und gleite durch den Garten.',ready:'Bereit zum Schweben?',intro:'Bewege dich und sammle leuchtende Punkte. Dein Komet wächst dabei. Weiche Schatten aus oder stoße sie mit einem Impuls weg.',play:'Spielen',calm:'Entspannter Modus: AN',calmOff:'Entspannter Modus: AUS',move:'Bewegen: WASD / Pfeile · Impuls: Leertaste · Pause: P',pause:'Pause',resume:'Weiter',soundOn:'Ton: AN',soundOff:'Ton: AUS',paused:'Eine kleine Pause?',pauseText:'Dein Garten wartet genau hier.',again:'Noch einmal',over:'Sanfte Berührung!',overText:'Ein Schatten hat deinen Kometen erwischt. Versuch es noch einmal!',languageSelect:'Sprache wählen'},
+ pt:{language:'Idioma',dots:'PONTOS',best:'RECORDE',stage:'FASE',subtitle:'Recolha pontos brilhantes e passeie pelo jardim.',ready:'Pronto para flutuar?',intro:'Mova-se e recolha pontos brilhantes. Seu cometa cresce. Evite as sombras ou afaste-as com um pulso.',play:'Jogar',calm:'Modo tranquilo: ON',calmOff:'Modo tranquilo: OFF',move:'Mover: WASD / setas · Pulso: Espaço · Pausa: P',pause:'Pausa',resume:'Continuar',soundOn:'Som: ON',soundOff:'Som: OFF',paused:'Vamos respirar?',pauseText:'Seu jardim espera aqui.',again:'Jogar novamente',over:'Um toque suave!',overText:'Uma sombra alcançou seu cometa. Tente mais uma vez!',languageSelect:'Escolher idioma'},
+ it:{language:'Lingua',dots:'PUNTI',best:'RECORD',stage:'LIVELLO',subtitle:'Raccogli punti luminosi e attraversa il giardino.',ready:'Pronto a fluttuare?',intro:'Muoviti e raccogli i punti luminosi. La tua cometa cresce. Evita le ombre o respingile con un impulso.',play:'Gioca',calm:'Modalità calma: ON',calmOff:'Modalità calma: OFF',move:'Muovi: WASD / frecce · Impulso: Spazio · Pausa: P',pause:'Pausa',resume:'Riprendi',soundOn:'Suono: ON',soundOff:'Suono: OFF',paused:'Una pausa?',pauseText:'Il tuo giardino ti aspetta qui.',again:'Gioca ancora',over:'Un piccolo urto!',overText:'Un’ombra ha preso la tua cometa. Riprova con calma!',languageSelect:'Scegli lingua'},
+ ru:{language:'Язык',dots:'ОЧКИ',best:'РЕКОРД',stage:'ЭТАП',subtitle:'Собирайте светящиеся точки и гуляйте по саду.',ready:'Готовы плыть?',intro:'Двигайтесь и собирайте светящиеся точки. Ваша комета растёт. Избегайте теней или отталкивайте их импульсом.',play:'Играть',calm:'Спокойный режим: ВКЛ',calmOff:'Спокойный режим: ВЫКЛ',move:'Движение: WASD / стрелки · Импульс: Пробел · Пауза: P',pause:'Пауза',resume:'Продолжить',soundOn:'Звук: ВКЛ',soundOff:'Звук: ВЫКЛ',paused:'Небольшой отдых?',pauseText:'Сад ждёт вас здесь.',again:'Играть снова',over:'Лёгкое столкновение!',overText:'Тень поймала комету. Попробуйте ещё раз!',languageSelect:'Выбрать язык'}
+};
+let nsLang='en';
+function nsBrowserLang(){let l=(navigator.language||'en').toLowerCase();if(l.startsWith('zh'))return 'zh';if(l.startsWith('pt'))return 'pt';let p=l.slice(0,2);return NS_TEXT[p]?p:'en'}
+function nsSetLang(lang,save=true){
+ nsLang=NS_TEXT[lang]?lang:'en';const t=NS_TEXT[nsLang];
+ document.documentElement.lang=nsLang;
+ const sel=document.getElementById('languageSelect');if(sel&&sel.value!==nsLang)sel.value=nsLang;
+ const put=(id,key)=>{let el=document.getElementById(id);if(el)el.textContent=t[key]};
+ put('languageLabel','language');
+ document.querySelectorAll('.stat small').forEach((el,i)=>el.textContent=[t.dots,t.best,t.stage][i]||el.textContent);
+ const brand=document.querySelector('.brand p');if(brand)brand.textContent=t.subtitle;
+ put('overlayTitle','ready');put('overlayText','intro');put('startBtn','play');
+ put('easyBtn',calm?'calm':'calmOff');put('pauseBtn',paused?'resume':'pause');
+ put('soundBtn',soundOn?'soundOn':'soundOff');
+ const move=document.querySelector('.below > span');if(move)move.textContent=t.move;
+ if(save){try{localStorage.setItem('ns-language',nsLang)}catch(e){}}
+}
+(function initLanguage(){
+ const sel=document.getElementById('languageSelect');if(!sel)return;
+ NS_LANGS.forEach(([code,label])=>{let o=document.createElement('option');o.value=code;o.textContent=label;sel.appendChild(o)});
+ let saved='';try{saved=localStorage.getItem('ns-language')||''}catch(e){}
+ nsSetLang(NS_TEXT[saved]?saved:nsBrowserLang(),false);
+ sel.addEventListener('change',()=>nsSetLang(sel.value,true));
+})();
+
+</script>
+</body>
+</html>
